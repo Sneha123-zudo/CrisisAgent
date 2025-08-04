@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NeerVaani - Crisis Agent</title>
+  <style>
+    body {
+      background-color: #f0f8ff;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: 50px auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #144272;
+      margin-bottom: 24px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #144272;
+      color: white;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0a2b4d;
+    }
+
+    .use-location {
+      background-color: #4caf50;
+      margin-top: 20px;
+    }
+
+    #resultContainer {
+      margin-top: 40px;
+    }
+
+    #responseBox {
+      background: #eaf6ff;
+      padding: 20px;
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #1f2f45;
+    }
+
+    h2 {
+      color: #1a395d;
+      text-align: center;
+    }
+
+    h3 {
+      color: #003366;
+      margin-top: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    strong {
+      color: #2a4d75;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌾 NeerVaani: Crisis Agent</h1>
+    <form id="crisisForm">
+      <label>📍 Latitude:</label>
+      <input type="number" id="lat" step="any" required />
+      <label>📍 Longitude:</label>
+      <input type="number" id="lon" step="any" required />
+      <button type="submit">Check Crisis</button>
+    </form>
+    <button class="use-location" onclick="getUserLocation()">📍 Use My Location</button>
+
+    <div id="resultContainer">
+      <h2>🚨 Crisis Report</h2>
+      <div id="responseBox"></div>
+    </div>
+  </div>
+
+  <script>
+    // Handle manual submission
+    document.getElementById('crisisForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const lat = document.getElementById('lat').value;
+      const lon = document.getElementById('lon').value;
+      fetchCrisisReport(lat, lon);
+    });
+
+    // Get location from browser
+    function getUserLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            document.getElementById('lat').value = latitude.toFixed(6);
+            document.getElementById('lon').value = longitude.toFixed(6);
+            fetchCrisisReport(latitude, longitude);
+          },
+          (error) => {
+            console.error('Error detecting location:', error.message);
+            alert('Location access denied or failed.');
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    }
+
+    // Fetch crisis report from backend
+    async function fetchCrisisReport(lat, lon) {
+      const responseBox = document.getElementById('responseBox');
+      responseBox.innerHTML = '<p>⏳ Analyzing weather and generating response...</p>';
+
+      try {
+        const res = await fetch('/crisis-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          responseBox.innerHTML = formatCrisisReport(data.analysis);
+        } else {
+          responseBox.innerHTML = `<p>❌ Error: ${data.error || 'Unknown error'}</p>`;
+        }
+      } catch (err) {
+        responseBox.innerHTML = `<p>🚫 Request failed: ${err.message}</p>`;
+      }
+    }
+
+    // Format AI response into styled HTML
+    function formatCrisisReport(text) {
+      return `
+        <div>
+          ${text
+            .replaceAll('🔍', '<h3>🔍 <u>Current Weather Summary:</u></h3>')
+            .replaceAll('🌸', '<h3>🌸 <u>Detected Crisis (if any):</u></h3>')
+            .replaceAll('🤍', '<h3>🤍 <u>Suggested Mitigation Strategy:</u></h3>')
+            .replaceAll('🎯', '<h3>🎯 <u>Emergency Support Instructions:</u></h3>')
+            .replaceAll(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold
+            .replaceAll(/\*(.*?)\*/g, '<li>$1</li>')              // Bullets
+            .replaceAll('\n', '<br>')}
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
